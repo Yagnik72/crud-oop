@@ -55,7 +55,7 @@
       <div class="col-lg-6">
         <button type="button" class="btn btn-primary m-1 float-right" data-toggle="modal" data-target="#addUserModel"><i class="fas fa-user-plus fa-lg"></i>&nbsp;&nbsp;
           Add New User</button>
-        <a href="#" class="btn btn-success m-1 float-right"><i class="fas fa-lg fa-table fa-lg"></i> Export To Excel</a>
+        <a href="http://localhost/php/crud_oops/action.php?export=excel" class="btn btn-success m-1 float-right"><i class="fas fa-lg fa-table fa-lg"></i> Export To Excel</a>
       </div>
     </div>
     <hr class="my-1">
@@ -63,36 +63,8 @@
     <div class="row">
       <div class="col-lg-12 ">
         <div class="table-responsive p-1" id="showUser">
-          <table class="table table-striped table-sm table-bordered">
-              <thead class="text-center">
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Action</th>
-              </thead>
-              <tbody>
-                <?php
-                  for ($i=0; $i < 100 ; $i++) { 
-                    ?>
-                    <tr class="text-center text-secondary">
-                      <td><?php echo $i; ?></td>
-                      <td>Yagnik <?php echo $i; ?></td>
-                      <td>Padaliya <?php echo $i; ?></td>
-                      <td>yagnik<?php echo $i; ?>@gmail.com</td>
-                      <td>77945612<?php echo $i; ?></td>
-                      <td>
-                        <a href="#" title="View Details" class="text-success"><i class="fas fa-info-circle fa-lg"></i></a>&nbsp;&nbsp;
-                        <a href="#" title="Edit Details" class="text-primary"><i class="fas fa-edit fa-lg"></i></a>&nbsp;&nbsp;
-                        <a href="#" title="View Details" class="text-danger"><i class="fas fa-trash fa-lg"></i></a>&nbsp;&nbsp;
-                      </td>
-                    </tr>
-                    <?php
-                  }
-                ?>
-              </tbody>
-          </table>
+          <!-- ajax View come -->
+          <h3 class="text-center text-success" style="margin-top:150px">Loading....</h3>
         </div>
       </div>
     </div>
@@ -131,9 +103,45 @@
     </div>
   </div>
 
+  <!-- Edit User Modal -->
+  <div class="modal fade" id="editUserModel" >
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editUserModelLongTitle">Edit User</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body px-4">
+          <form action="" method="post" id="edit-form-data">
+            <div class="form-group">
+              <input type="hidden" name="id" id="id">
+              <input type="text" name="fname" class="form-control" id="fname" placeholder="First Name" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="lname" class="form-control" id="lname" placeholder="Last Name" required>
+            </div>
+            <div class="form-group">
+              <input type="email" name="email" class="form-control" id="email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+              <input type="tel" name="phone" class="form-control" id="phone" placeholder="Phone" required>
+            </div>
+            <div class="form-group">
+              <input type="submit" name="insert" id="update" class="btn btn-primary btn-block" value="Update User">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- jQuery library -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.slim.min.js"></script>
+
+  <!-- jQuery - Ajax -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
   <!-- Popper JS -->
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
@@ -152,7 +160,164 @@
 
   <script>
     $(document).ready(function(){
-      $('table').DataTable();
+      var ajaxUrl = "../action.php";
+
+      showAllUsers()
+      function showAllUsers(){
+        $.ajax({
+          url: ajaxUrl,
+          type: "POST",
+          data: {action:'view'},
+          success: function(response){
+            $('#showUser').html(response)
+            $('table').DataTable({
+              order: [0, 'desc']
+            });
+          }
+        });
+      }
+
+      // insert ID
+      $('#insert').click(function(e){
+        if($('#form-data')[0].checkValidity()){
+          e.preventDefault();
+          $.ajax({
+          url: ajaxUrl,
+          type: "POST",
+          data: $('#form-data').serialize()+"&action=insert",
+          success: function(response){
+              Swal.fire({
+                position: 'center',
+                icon: 'success',
+                title: 'User Added Successfully!',
+                showConfirmButton: true
+              })
+              $('#addUserModel').modal('hide')
+              $('#form-data').trigger('reset')
+              showAllUsers()
+          }
+        });
+        }
+      });
+
+      // Edit ID
+      $('body').on( "click", '.editBtn', function(e){
+          e.preventDefault();
+          edit_id = $(this).attr('id');
+
+            $.ajax({
+              url: ajaxUrl,
+              type: "POST",
+              data: {
+                edit_id: edit_id,
+                action: 'edit'
+              },
+              success: function(response){
+                data = JSON.parse(response);
+                $('#editUserModel #id').val(data.id)
+                $('#editUserModel #fname').val(data.first_name)
+                $('#editUserModel #lname').val(data.last_name)
+                $('#editUserModel #email').val(data.email)
+                $('#editUserModel #phone').val(data.phone)
+              }  
+            });
+      });
+
+      // Update ID
+      $('#update').click(function(e){
+        if($('#edit-form-data')[0].checkValidity()){
+          e.preventDefault();
+          $.ajax({
+          url: ajaxUrl,
+          type: "POST",
+          data: $('#edit-form-data').serialize()+"&action=update",
+          success: function(response){
+              Swal.fire({
+                position: 'center',
+                icon: 'success',
+                title: 'User updated Successfully!',
+                showConfirmButton: true
+              })
+              $('#editUserModel').modal('hide')
+              $('#edit-form-data').trigger('reset')
+              showAllUsers()
+          }
+        });
+        }
+      });
+
+      // Delete User
+      $("body").on("click", ".deleteBtn", function (e) {
+        e.preventDefault();
+
+        var tr = $(this).closest("tr")
+        delete_id = $(this).attr("id")
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+          if (result.isConfirmed) {
+
+            $(tr).css('background-color', '#ff6666');
+
+            Swal.fire(
+              'Deleted!',
+              'Your file has been deleted.',
+              'success'
+            )
+
+            $.ajax({
+              url: ajaxUrl,
+              type: "POST",
+              data: {
+                delete_id: delete_id,
+                action: "delete"
+              },
+              success: function (response) {
+                $(tr).hide();
+              }
+            })
+          }
+        })
+
+      })
+
+      // View User
+      $('body').on("click", ".infoBtn", function(e){
+        e.preventDefault();
+        info_id = $(this).attr("id")
+          $.ajax({
+            url: ajaxUrl,
+            type: "POST",
+            data: {
+              info_id: info_id,
+              action: 'info'
+            },
+            success: function(response){
+              data = JSON.parse(response);
+              $('#editUserModel #id').val(data.id)
+              $('#editUserModel #fname').val(data.first_name)
+              $('#editUserModel #lname').val(data.last_name)
+              $('#editUserModel #email').val(data.email)
+              $('#editUserModel #phone').val(data.phone)
+
+              Swal.fire({
+                title: '<strong>User Info: ID('+data.id+')</strong>',
+                type: 'info',
+                html: '<b>First Name: </b>'+data.first_name+'<br><b>Last Name: </b>'+data.last_name+'<br>'+
+                      '<b>Email: </b>'+data.email+'<br><b>Phone: </b>'+data.phone,
+                showCancelButton: true
+              });
+            }  
+          });
+      });
+
     })
   </script>
 </body>
